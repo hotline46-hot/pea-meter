@@ -86,10 +86,10 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid v
 </fieldset>
 
 <fieldset><legend>1. ข้อมูลผู้ใช้ไฟ</legend>
-  <label>วันที่ตรวจสอบ<input type="date" name="วันที่ตรวจสอบ" id="d" required></label>
-  <label>หมายเลขผู้ใช้ไฟ (CA)<input type="tel" name="หมายเลขผู้ใช้ไฟ" inputmode="numeric" required></label>
+  <label>วันที่ตรวจสอบ<input type="date" name="วันที่ตรวจสอบ" id="d"></label>
+  <label>หมายเลขผู้ใช้ไฟ (CA)<input type="tel" name="หมายเลขผู้ใช้ไฟ" inputmode="numeric"></label>
   <div class="row">
-    <label>ชื่อ<input type="text" name="ชื่อ" required></label>
+    <label>ชื่อ<input type="text" name="ชื่อ"></label>
     <label>สกุล<input type="text" name="สกุล"></label>
   </div>
   <div class="row">
@@ -109,7 +109,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid v
   <label>PEA (เลขเดิม)<input type="tel" name="PEA เดิม" inputmode="numeric"></label>
   <label>หมายเลขเครื่อง<input type="text" name="หมายเลขเครื่องเดิม"></label>
   <div class="row">
-    <label>ขนาด (แอมป์)<select name="ขนาดแอมป์" required><option value="">-- เลือก --</option><option>5(15)</option><option>15(45)</option><option>30(100)</option><option>5(100)</option><option>TOU5(45)</option><option>TOU5(100)</option></select></label>
+    <label>ขนาด (แอมป์)<select name="ขนาดแอมป์"><option value="">-- เลือก --</option><option>5(15)</option><option>15(45)</option><option>30(100)</option><option>5(100)</option><option>TOU5(45)</option><option>TOU5(100)</option></select></label>
     <label>เฟส/สาย<select name="เฟสสาย"><option>1 เฟส 2 สาย</option><option>3 เฟส 4 สาย</option></select></label>
   </div>
   <div class="row">
@@ -179,7 +179,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid v
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 // ===== ตั้งค่า: ใส่ URL ของ Apps Script (Web app) ที่นี่ =====
-const API_URL = "https://script.google.com/macros/s/AKfycbxoere_elzrs836wLCbGA3wuPcwUv05NP4S6YEusTHSh-pw7C9thtai4K_UpxVUL9Yi/exec";
+const API_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HERE";
 // ==========================================================
 const $=s=>document.querySelector(s), f=$('#f');
 const Q='pea_queue';
@@ -230,7 +230,9 @@ function collect(){
 }
 async function send(o){
   if(API_URL.startsWith('PASTE'))throw new Error('ยังไม่ได้ตั้งค่า API_URL');
-  await fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(o)});
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(o)});
+  let j;try{j=await r.json()}catch(e){throw new Error('Apps Script ตอบกลับผิดปกติ (ตรวจสอบสิทธิ์ Anyone และ URL /exec)')}
+  if(!j||!j.ok)throw new Error((j&&j.error)||'Apps Script ผิดพลาด');
 }
 function pend(){const n=loadQ().length;$('#pend').style.display=n?'block':'none';$('#pendTxt').textContent=`ค้างส่ง ${n} รายการ`}
 async function flush(){
@@ -246,7 +248,7 @@ function reset(){
   loadBranch();scrollTo({top:0,behavior:'smooth'});
 }
 $('#save').onclick=async()=>{
-  if(!f.reportValidity())return;
+  if(!['หมายเลขผู้ใช้ไฟ','ชื่อ','สกุล','PEA เดิม','PEA ใหม่'].some(k=>(f.elements[k].value||'').trim())){toast('กรอกอย่างน้อย 1 ช่อง เช่น เลขผู้ใช้ไฟ หรือ ชื่อ',false);return}
   const o=collect();
   try{localStorage.setItem('pea_last',JSON.stringify(o))}catch(e){}
   showLast();
@@ -257,7 +259,7 @@ $('#save').onclick=async()=>{
     await send(o);toast('บันทึกลง Google Sheet แล้ว',true);
   }catch(e){
     const q=loadQ();q.push(o);saveQ(q);pend();
-    toast('ยังส่งไม่ได้ เก็บไว้ในเครื่องแล้ว จะส่งให้เมื่อมีสัญญาณ',false);
+    toast('ส่งเข้าชีตไม่สำเร็จ: '+(e&&e.message||e)+' (เก็บไว้ในเครื่องแล้ว)',false);
   }
   btn.disabled=false;btn.textContent='บันทึกข้อมูล';reset();
 };
